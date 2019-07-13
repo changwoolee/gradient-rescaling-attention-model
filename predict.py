@@ -1,12 +1,16 @@
 import os
 import glob
-import json
 import logging
 import argparse
+import tqdm
+import numpy as np
+from PIL import Image
 
 from data import fullsize_sequence, DOWNGRADES
 from model import load_model
 from util import reset_session
+
+DATASETS = ['Set5_LR_bicubic', 'Set14_LR_bicubic', 'DIV2K_valid_LR_bicubic', 'BSDS100_LR_bicubic', 'Urban100_LR_bicubic']
 
 logger = logging.getLogger(__name__)
 
@@ -18,25 +22,34 @@ def model_paths(input_dir):
 	return paths
 
 
-def select_best_psnr(psnr_dict):
-	best_psnr = 0.0
-	best_model = None
-
-	for model, psnr in psnr_dict.items():
-		if psnr > best_psnr:
-			best_psnr = psnr
-			best_model = model
-
-	return best_psnr, best_model
-
-
-def evaluate_model(model_path, generator):
-	"""Evaluate model against DIV2K validation set and return PSNR"""
+def predict_model(model_path, image_path, scale, outdir):
 	logger.info('Load model %s', model_path)
 	model = load_model(model_path)
 
-	logger.info('Evaluate model %s', model_path)
-	return model.evaluate_generator(generator, steps=100, verbose=1)[1]
+	for dataset_name in DATASETS:
+		print(dataset_name)
+		target_outdir = os.path.join(outdir, dataset_name, 'X%d'%(scale))
+		target_image_path = os.path.join(image_path, dataset_name, 'X%d'%(scale))
+		if not os.path.exists(target_outdir):
+			os.makedirs(target_outdir)
+		
+
+		image_filenames = sorted(glob.glob(os.path.join(target_image_path, '*.png')))
+		if len(image_filenames) == 0:
+			logger.warning('No image files. Stop prediction..')
+			exit()
+
+		logger.info('Start prediction with %s', model_path)
+		for i, f in tqdm.tqdm(enumerate(image_filenames)):
+			filename = os.path.split(f)[1]
+			im = Image.open(f).convert('RGB')
+			im = np.array(im)
+			im = np.reshape(im, (1,) + im.shape)
+			output = model.predict(im, batch_size=1)
+			output = np.squeeze(output)
+			im_out = Image.fromarray(np.uint8(output))
+			im_out.save(os.path.join(target_outdir, filename))
+
 
 
 def main(args):
@@ -51,26 +64,9 @@ def main(args):
 	mps = model_paths(args.indir)
 
 	if mps:
-		generator = fullsize_sequence(args.dataset, scale=args.scale, subset='valid', downgrade=args.downgrade)
-		psnr_dict = {}
-		'''
-		for mp in mps:
-			reset_session(args.gpu_memory_fraction)
-			psnr = evaluate_model(mp, generator)
-			logger.info('PSNR = %.4f for model %s', psnr, mp)
-			psnr_dict[mp] = psnr
-		'''
 		reset_session(args.gpu_memory_fraction)
-		psnr = evaluate_model(mps[-1], generator)
-		logger.info('PSNR = %.4f for model %s', psnr, mps[-1])
-		psnr_dict[mps[-1]] = psnr
+		predict_model(mps[-1], args.dataset, args.scale, args.outdir)
 
-		logger.info('Write results to %s', args.outfile)
-		with open(args.outfile, 'w') as f:
-			json.dump(psnr_dict, f)
-
-		best_psnr, best_model = select_best_psnr(psnr_dict)
-		logger.info('Best PSNR = %.4f for model %s', best_psnr, best_model)
 	else:
 		logger.warning('No models found in %s', args.indir)
 
@@ -78,11 +74,11 @@ def main(args):
 def parser():
 	parser = argparse.ArgumentParser(description='Evaluation against DIV2K validation set')
 
-	parser.add_argument('-d', '--dataset', type=str, default='./DIV2K_BIN',
+	parser.add_argument('-d', '--dataset', type=str, default='/home/esoc/datasets/SuperResolution/',
 						help='path to DIV2K dataset with images stored as numpy arrays')
 	parser.add_argument('-i', '--indir', type=str,
 						help='path to models directory')
-	parser.add_argument('-o', '--outfile', type=str, default='./eval.json',
+	parser.add_argument('-o', '--outdir', type=str, default='./image_predictions',
 						help='output JSON file')
 	parser.add_argument('-s', '--scale', type=int, default=2, choices=[2, 3, 4],
 						help='super-resolution scale')
