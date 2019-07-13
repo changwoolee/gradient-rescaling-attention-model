@@ -28,7 +28,7 @@ def heteroscedastic_loss(logvar,
 				attention_mask = tf.stop_gradient(attention_mask)
 
 			loss = attention_mask * loss
-		return K.mean(loss)
+		return K.mean(loss, axis=-1)
 
 	return het_loss
 
