@@ -49,6 +49,10 @@ def psnr(hr, sr):
 	hr, sr = _crop_hr_in_training(hr, sr)
 	return tf.image.psnr(hr, sr, max_val=255)
 
+def psnr_unc(hr, sr):
+	sr = sr[:,:,:,:3]
+	return psnr(hr, sr)
+
 
 def _crop_hr_in_training(hr, sr):
 	"""
@@ -71,15 +75,16 @@ def _crop_hr_in_training(hr, sr):
 	return hr, sr
 
 
-def _load_model(path):
-	return load_model(path, custom_objects={**_custom_objects, **_custom_objects_backwards_compat})
+def _load_model(path, compile=True):
+	return load_model(path, custom_objects={**_custom_objects, **_custom_objects_backwards_compat}, compile=compile)
 
 
 _custom_objects = {
 	'tf': tf,
 	'AdamWithWeightnorm': wn.AdamWithWeightnorm,
 	'mae': mae,
-	'psnr': psnr
+	'psnr': psnr,
+	'psnr_unc': psnr_unc
 }
 
 _custom_objects_backwards_compat = {
@@ -128,7 +133,7 @@ def main(args):
 			if not args.pred_logvar:
 			  loss = mean_squared_error
 			else:
-			  loss = heteroscedastic_loss(model.logvar, 
+			  loss = heteroscedastic_loss(
 										  args.attention,
 										  args.block_attention_gradient,
 										  mode='l2')
@@ -162,7 +167,7 @@ def main(args):
 				logger.info('Data-based initialization of weights with %d batches', args.num_init_batches)
 				model_weightnorm_init(model, training_generator, args.num_init_batches)
 		else:
-			model.compile(optimizer=Adam(lr=args.learning_rate), loss=loss, metrics=[psnr])
+			model.compile(optimizer=Adam(lr=args.learning_rate), loss=loss, metrics=[psnr] if not args.pred_logvar else [psnr_unc])
 
 		if args.pretrained_model:
 			logger.info('Initialization with weights from pre-trained model %s', args.pretrained_model)
@@ -174,7 +179,7 @@ def main(args):
 	callbacks = [
 		tensor_board(train_dir),
 		learning_rate(step_size=args.learning_rate_step_size, decay=args.learning_rate_decay),
-		model_checkpoint_after(args.save_models_after_epoch, models_dir, monitor=f'val_psnr',
+		model_checkpoint_after(args.save_models_after_epoch, models_dir, monitor=f'val_psnr' if not args.pred_logvar else f'val_psnr_unc',
 							   save_best_only=args.save_best_models_only or args.benchmark)
 	]
 
@@ -266,7 +271,7 @@ def parser():
 						help='path to pre-trained model')
 	parser.add_argument('--save-best-models-only', action='store_true',
 						help='save only models with improved validation psnr (overridden by --benchmark)')
-	parser.add_argument('--save-models-after-epoch', type=int, default=280,
+	parser.add_argument('--save-models-after-epoch', type=int, default=0,
 						help='start saving models only after given epoch')
 	parser.add_argument('--benchmark', action='store_true',
 						help='validate with full-size DIV2K images after each epoch and save best models only')

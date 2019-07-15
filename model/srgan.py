@@ -1,4 +1,4 @@
-from keras.layers import Add, BatchNormalization, Conv2D, Dense, Flatten, Input, LeakyReLU, PReLU
+from keras.layers import Add, BatchNormalization, Conv2D, Dense, Flatten, Input, LeakyReLU, PReLU, Concatenate
 from keras.models import Model
 from keras.applications.vgg19 import VGG19
 
@@ -51,12 +51,11 @@ def sr_resnet(num_filters=64, num_res_blocks=16, pred_logvar=False):
 
 	x_mean = Conv2D(3, kernel_size=9, padding='same', activation='tanh')(x)
 	x_mean = Denormalization_m11()(x_mean)
-
-	m = Model(x_in, x_mean)
-
 	if pred_logvar:
 		x_logvar = Conv2D(3, kernel_size=9, padding='same')(x)
-		m.logvar = x_logvar
+		x_mean = Concatenate()([x_mean, x_logvar])
+
+	m = Model(x_in, x_mean)
 	return m
 
 

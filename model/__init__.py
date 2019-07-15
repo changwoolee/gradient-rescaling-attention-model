@@ -2,9 +2,9 @@ import os
 import tempfile
 
 
-def load_model(path):
+def load_model(path, compile=True):
     import train
-    return train._load_model(path)
+    return train._load_model(path, compile=compile)
 
 
 def copy_weights(from_model, to_model, by_name=True):

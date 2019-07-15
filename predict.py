@@ -24,7 +24,7 @@ def model_paths(input_dir):
 
 def predict_model(model_path, image_path, scale, outdir):
 	logger.info('Load model %s', model_path)
-	model = load_model(model_path)
+	model = load_model(model_path, compile=False)
 
 	for dataset_name in DATASETS:
 		print(dataset_name)
@@ -32,7 +32,6 @@ def predict_model(model_path, image_path, scale, outdir):
 		target_image_path = os.path.join(image_path, dataset_name, 'X%d'%(scale))
 		if not os.path.exists(target_outdir):
 			os.makedirs(target_outdir)
-		
 
 		image_filenames = sorted(glob.glob(os.path.join(target_image_path, '*.png')))
 		if len(image_filenames) == 0:
@@ -47,7 +46,14 @@ def predict_model(model_path, image_path, scale, outdir):
 			im = np.reshape(im, (1,) + im.shape)
 			output = model.predict(im, batch_size=1)
 			output = np.squeeze(output)
-			im_out = Image.fromarray(np.uint8(output))
+			im_out = output
+			if output.shape[-1] > 3:
+				im_out = output[:,:,:3]
+				logvar = output[:,:,3:]
+				logvar_filename = os.path.join(target_outdir, os.path.splitext(filename)[0])
+				np.save(logvar_filename, logvar)
+				
+			im_out = Image.fromarray(np.uint8(im_out))
 			im_out.save(os.path.join(target_outdir, filename))
 
 
