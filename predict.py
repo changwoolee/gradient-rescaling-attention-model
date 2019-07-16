@@ -5,6 +5,7 @@ import argparse
 import tqdm
 import numpy as np
 from PIL import Image
+import matplotlib.pyplot as plt
 
 from data import fullsize_sequence, DOWNGRADES
 from model import load_model
@@ -52,6 +53,7 @@ def predict_model(model_path, image_path, scale, outdir):
 				logvar = output[:,:,3:]
 				logvar_filename = os.path.join(target_outdir, os.path.splitext(filename)[0])
 				np.save(logvar_filename, logvar)
+				plt.imsave(logvar_filename+'_logvar.png', logvar.mean(axis=-1), cmap='viridis')
 				
 			im_out = Image.fromarray(np.uint8(im_out))
 			im_out.save(os.path.join(target_outdir, filename))

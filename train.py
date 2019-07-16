@@ -44,6 +44,11 @@ def mae(hr, sr):
 	hr, sr = _crop_hr_in_training(hr, sr)
 	return mean_absolute_error(hr, sr)
 
+def mse(hr, sr):
+	hr, sr = _crop_hr_in_training(hr, sr)
+	sr = sr[:,:,:,:3]
+	return mean_squared_error(hr, sr)
+
 
 def psnr(hr, sr):
 	hr, sr = _crop_hr_in_training(hr, sr)
@@ -82,6 +87,7 @@ def _load_model(path, compile=True):
 _custom_objects = {
 	'tf': tf,
 	'AdamWithWeightnorm': wn.AdamWithWeightnorm,
+	'mse': mse,
 	'mae': mae,
 	'psnr': psnr,
 	'psnr_unc': psnr_unc
@@ -167,7 +173,7 @@ def main(args):
 				logger.info('Data-based initialization of weights with %d batches', args.num_init_batches)
 				model_weightnorm_init(model, training_generator, args.num_init_batches)
 		else:
-			model.compile(optimizer=Adam(lr=args.learning_rate), loss=loss, metrics=[psnr] if not args.pred_logvar else [psnr_unc])
+			model.compile(optimizer=Adam(lr=args.learning_rate), loss=loss, metrics=[psnr] if not args.pred_logvar else [psnr_unc, mse])
 
 		if args.pretrained_model:
 			logger.info('Initialization with weights from pre-trained model %s', args.pretrained_model)

@@ -8,18 +8,22 @@ from keras.utils.data_utils import OrderedEnqueuer
 
 def heteroscedastic_loss(attention=False, 
 												 block_attention_gradient=False, 
-												 mode='l2'):
+												 mode='l2',
+												 scale=10.):
 	''' Heteroscedastic loss.'''
 
 	def het_loss(y_true, y_pred):
 		y_mean = y_pred[:,:,:,:3]
 		y_logvar = y_pred[:,:,:,3:]
 		if mode == 'l2':
-			euclidian_loss = K.square(y_true - y_mean)
+			euclidian_loss = K.square(y_true - y_mean)/(127.5**2)
 		elif mode == 'l1':
-			euclidian_loss = K.abs(y_true - y_mean)
+			euclidian_loss = K.abs(y_true/127.5 - y_mean/127.5)
 
-		loss = tf.exp(-y_logvar)*euclidian_loss + y_logvar
+		loss = 127.5 * tf.exp(-y_logvar)*euclidian_loss + y_logvar
+		if mode == 'l2':
+			loss *= 127.5
+			
 
 		if attention:
 			attention_mask = tf.nn.sigmoid(y_logvar)
