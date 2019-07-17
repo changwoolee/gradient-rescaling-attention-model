@@ -1,7 +1,8 @@
-from keras.layers import Add, BatchNormalization, Conv2D, Dense, Flatten, Input, LeakyReLU, PReLU, Concatenate
+from keras.layers import Add, BatchNormalization, Conv2D, Dense, Flatten, Input, LeakyReLU, PReLU, Concatenate, Lambda
 from keras.models import Model
 from keras.applications.vgg19 import VGG19
 
+from keras import backend as K
 from .common import SubpixelConv2D, Normalization_01, Normalization_m11, Denormalization_m11
 
 LR_SIZE = 24
@@ -95,7 +96,8 @@ def srgan(generator, discriminator):
 
 	x_in = Input(shape=(LR_SIZE, LR_SIZE, 3))
 	x_1 = generator(x_in)
-	x = discriminator(x_1)
+	x_1_mean = Lambda(lambda x: x[:,:,:,:3])(x_1)
+	x = discriminator(x_1_mean)
 
 	return Model(x_in, [x_1, x])
 

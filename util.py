@@ -8,8 +8,7 @@ from keras.utils.data_utils import OrderedEnqueuer
 
 def heteroscedastic_loss(attention=False, 
 												 block_attention_gradient=False, 
-												 mode='l2',
-												 scale=10.):
+												 mode='l2'):
 	''' Heteroscedastic loss.'''
 
 	def het_loss(y_true, y_pred):

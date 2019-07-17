@@ -24,7 +24,7 @@ def model_paths(input_dir):
 
 
 def predict_model(model_path, image_path, scale, outdir):
-	logger.info('Load model %s', model_path)
+	print('Load model %s', model_path)
 	model = load_model(model_path, compile=False)
 
 	for dataset_name in DATASETS:
@@ -35,6 +35,7 @@ def predict_model(model_path, image_path, scale, outdir):
 			os.makedirs(target_outdir)
 
 		image_filenames = sorted(glob.glob(os.path.join(target_image_path, '*.png')))
+		print(os.path.join(target_image_path, '*.png'))
 		if len(image_filenames) == 0:
 			logger.warning('No image files. Stop prediction..')
 			exit()

@@ -90,7 +90,8 @@ _custom_objects = {
 	'mse': mse,
 	'mae': mae,
 	'psnr': psnr,
-	'psnr_unc': psnr_unc
+	'psnr_unc': psnr_unc,
+	'het_loss': heteroscedastic_loss(True, False)
 }
 
 _custom_objects_backwards_compat = {
@@ -212,9 +213,9 @@ def parser():
 	parser.add_argument('-o', '--outdir', type=str, default='./output',
 						help='output directory')
 
-		# --------------
-		#  Uncertainty
-		# --------------
+	# --------------
+	#  Uncertainty
+	# --------------
 	parser.add_argument('-plv', '--pred_logvar', action='store_true',
 						help='If true predict log variance to estimate'
 							'heteroscedastic uncertainty.')
