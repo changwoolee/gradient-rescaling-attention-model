@@ -2,3 +2,11 @@
 tests/dataset/arr
 tests/.pytest*
 __pycache__/
+image*/
+*.tar.gz
+*.pdf
+compare/
+cropped_images/
+DIV2K/
+DIV2K_BIN/
+output/
