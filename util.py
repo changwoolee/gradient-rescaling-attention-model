@@ -14,21 +14,23 @@ def heteroscedastic_loss(attention=False,
 	def het_loss(y_true, y_pred):
 		y_mean = y_pred[:,:,:,:3]
 		y_logvar = y_pred[:,:,:,3:]
+		y_logvar = K.clip(y_logvar, -10, 10)
 		if mode == 'l2':
-			euclidian_loss = K.square(y_true - y_mean)/(127.5**2)
+			euclidian_loss = K.square(y_true/127.5 - y_mean/127.5)
 		elif mode == 'l1':
 			euclidian_loss = K.abs(y_true/127.5 - y_mean/127.5)
 
-		loss = 127.5 * tf.exp(-y_logvar)*euclidian_loss + y_logvar
+		loss = tf.exp(-y_logvar)*euclidian_loss + y_logvar
+		loss *= 127.5
 		if mode == 'l2':
 			loss *= 127.5
 			
 
 		if attention:
-			attention_mask = tf.nn.sigmoid(y_logvar)
+			attention_mask = K.sigmoid(y_logvar) 
 
 			if block_attention_gradient:
-				attention_mask = tf.stop_gradient(attention_mask)
+				attention_mask = K.stop_gradient(attention_mask)
 
 			loss = attention_mask * loss
 		return K.mean(loss, axis=-1)

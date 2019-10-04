@@ -91,7 +91,7 @@ _custom_objects = {
 	'mae': mae,
 	'psnr': psnr,
 	'psnr_unc': psnr_unc,
-	'het_loss': heteroscedastic_loss(True, False)
+	'het_loss': heteroscedastic_loss(False, False)
 }
 
 _custom_objects_backwards_compat = {

@@ -12,6 +12,8 @@ logger = logging.getLogger(__name__)
 
 
 def model_paths(input_dir):
+	if os.path.splitext(input_dir)[1] == '.h5':
+		return [input_dir]
 	path_pattern = os.path.join(input_dir, '**', '*.h5')
 	paths = glob.glob(path_pattern, recursive=True)
 	paths.sort()
@@ -36,7 +38,7 @@ def evaluate_model(model_path, generator):
 	model = load_model(model_path)
 
 	logger.info('Evaluate model %s', model_path)
-	return model.evaluate_generator(generator, steps=100, verbose=1)[1]
+	return model.evaluate_generator(generator, steps=100, verbose=1)[0]
 
 
 def main(args):
@@ -61,9 +63,9 @@ def main(args):
 			psnr_dict[mp] = psnr
 		'''
 		reset_session(args.gpu_memory_fraction)
-		psnr = evaluate_model(mps[-1], generator)
-		logger.info('PSNR = %.4f for model %s', psnr, mps[-1])
-		psnr_dict[mps[-1]] = psnr
+		pll = evaluate_model(mps[-1], generator)
+		print('PLL = %.4f for model %s', pll, mps[-1])
+		psnr_dict[mps[-1]] = pll
 
 		logger.info('Write results to %s', args.outfile)
 		with open(args.outfile, 'w') as f:

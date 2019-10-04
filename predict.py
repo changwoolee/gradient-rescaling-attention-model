@@ -17,6 +17,8 @@ logger = logging.getLogger(__name__)
 
 
 def model_paths(input_dir):
+	if os.path.splitext(input_dir)[1] == '.h5':
+		return [input_dir]
 	path_pattern = os.path.join(input_dir, '**', '*.h5')
 	paths = glob.glob(path_pattern, recursive=True)
 	paths.sort()
